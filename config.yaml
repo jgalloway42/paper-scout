@@ -52,7 +52,7 @@ ingestors:
       - url: "https://distill.pub/rss.xml"
         name: "Distill"
   reddit:
-    enabled: true
+    enabled: false
     subreddits: ["MachineLearning", "artificial"]
     post_limit: 25
   papers_with_code:
