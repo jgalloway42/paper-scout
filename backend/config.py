@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-_CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
+_CONFIG_PATH = Path(os.environ.get("PAPER_SCOUT_CONFIG") or Path(__file__).parent.parent / "config.yaml")
 
 
 @dataclass
