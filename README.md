@@ -7,31 +7,31 @@ links, and refines your interest profile from feedback.
 
 ## Prerequisites
 
-- Python ≥ 3.11
+- Docker + Docker Compose
 - A Gmail account with an App Password (see below)
 - One LLM API key: Anthropic, Google Gemini, or a local Ollama instance
 - Reddit app credentials (optional — see below)
 
-## Quick start (local)
+## Quick start
 
 ```bash
-# 1. Clone and install
+# 1. Clone and configure secrets
 git clone <repo>
 cd paper-scout
-pip install -e ".[dev]"
-
-# 2. Configure secrets
 cp .env.example .env
 # Edit .env — fill in LLM key, Gmail credentials, HMAC secret
 
-# 3. Apply DB schema
-make migrate
+# 2. Build the image (downloads deps + embedding model — takes a few minutes once)
+docker compose build
 
-# 4. Run a dry-run digest (no email, no DB write)
-make run-digest-dry
+# 3. Dry-run digest — fetches papers, scores them, logs top 5 (no email, no DB write)
+docker compose run --rm app paper-scout digest --dry-run
 
-# 5. When ready, run for real
-make run-digest
+# 4. When ready, run for real
+docker compose run --rm app paper-scout digest
+
+# 5. Start the API (for receiving rating clicks from email)
+docker compose up
 ```
 
 ## Gmail App Password setup
@@ -89,19 +89,27 @@ See `.env.example` for all required and optional variables. Required:
 | `PAPER_SCOUT_HMAC_SECRET` | Random string — must match in Railway |
 | `RAILWAY_API_URL` | Your Railway service URL |
 
-## `make` targets
+## Docker commands
 
-| Target | Description |
+| Command | Description |
 |---|---|
-| `make install` | Install runtime deps |
-| `make dev-install` | Install with dev deps |
-| `make migrate` | Apply DB schema |
-| `make run-api` | Start FastAPI locally |
-| `make run-digest` | Run weekly digest |
-| `make run-digest-dry` | Dry run (no DB/email) |
-| `make test` | Run tests with coverage |
-| `make lint` | Ruff lint check |
-| `make format` | Ruff auto-format |
+| `docker compose build` | Build the image |
+| `docker compose up` | Start the API on port 8000 |
+| `docker compose run --rm app paper-scout digest --dry-run` | Dry-run digest |
+| `docker compose run --rm app paper-scout digest` | Run weekly digest |
+| `docker compose run --rm app paper-scout history` | Show past digests |
+| `docker compose run --rm app paper-scout profile` | Show interest profile |
+
+The DB is stored in a named Docker volume (`paper_scout_data`) and persists across runs.
+
+## Local dev (without Docker)
+
+```bash
+pip install -e ".[dev]"
+make test      # run tests
+make lint      # ruff check
+make format    # ruff format
+```
 
 ## Railway deployment
 

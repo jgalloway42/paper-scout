@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    env_file: .env
+    environment:
+      PAPER_SCOUT_DB_PATH: /data/paper_scout.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - paper_scout_data:/data
+
+volumes:
+  paper_scout_data:
