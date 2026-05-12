@@ -150,6 +150,7 @@ async def test_raises_digest_error_when_all_ingestors_fail(tmp_db, monkeypatch):
         "backend.ingestors.arxiv.ArxivIngestor.fetch",
         "backend.ingestors.semantic_scholar.SemanticScholarIngestor.fetch",
         "backend.ingestors.huggingface.HuggingFaceIngestor.fetch",
+        "backend.ingestors.papers_with_code.PapersWithCodeIngestor.fetch",
         "backend.ingestors.rss.RssIngestor.fetch",
         "backend.ingestors.reddit.RedditIngestor.fetch",
     ]:

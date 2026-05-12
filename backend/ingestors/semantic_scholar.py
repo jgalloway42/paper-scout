@@ -1,5 +1,6 @@
 """Semantic Scholar ingestor via aiohttp REST."""
 
+import asyncio
 import logging
 from datetime import date
 
@@ -32,7 +33,9 @@ class SemanticScholarIngestor(BaseIngestor):
 
         try:
             async with aiohttp.ClientSession(headers=headers) as session:
-                for keyword in self._keywords:
+                for i, keyword in enumerate(self._keywords):
+                    if i > 0:
+                        await asyncio.sleep(1)
                     try:
                         await self._fetch_keyword(session, keyword, since, items)
                     except Exception as exc:

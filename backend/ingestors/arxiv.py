@@ -19,7 +19,7 @@ class ArxivIngestor(BaseIngestor):
         items: list[RawItem] = []
         try:
             query = " OR ".join(f"cat:{c}" for c in self._categories)
-            client = arxiv.Client()
+            client = arxiv.Client(delay_seconds=5, num_retries=5)
             search = arxiv.Search(
                 query=query,
                 max_results=self._max_results,

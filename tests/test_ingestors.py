@@ -135,7 +135,7 @@ async def test_arxiv_ingestor_returns_items(monkeypatch):
     mock_client = MagicMock()
     mock_client.results.return_value = [mock_result]
 
-    monkeypatch.setattr("backend.ingestors.arxiv.arxiv.Client", lambda: mock_client)
+    monkeypatch.setattr("backend.ingestors.arxiv.arxiv.Client", lambda **kw: mock_client)
 
     ingestor = ArxivIngestor(categories=["cs.LG"], max_results=10)
     items = await ingestor.fetch(date(2024, 1, 1))
@@ -218,20 +218,20 @@ async def test_semantic_scholar_failure_returns_empty(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_papers_with_code_returns_items(monkeypatch):
-    payload = {
-        "results": [
-            {
-                "id": "attention-is-all-you-need",
+    # HuggingFace daily papers API format
+    payload = [
+        {
+            "paper": {
+                "id": "1706.03762",
                 "title": "Attention Is All You Need",
-                "abstract": "The dominant sequence transduction models...",
+                "summary": "The dominant sequence transduction models...",
                 "authors": [{"name": "Ashish Vaswani"}],
-                "published": date.today().isoformat(),
-                "arxiv_id": "1706.03762",
-                "url_abs": "https://arxiv.org/abs/1706.03762",
+                "publishedAt": date.today().isoformat() + "T00:00:00.000Z",
             }
-        ]
-    }
+        }
+    ]
     mock_resp = AsyncMock()
+    mock_resp.status = 200
     mock_resp.raise_for_status = MagicMock()
     mock_resp.json = AsyncMock(return_value=payload)
     mock_resp.__aenter__ = AsyncMock(return_value=mock_resp)
@@ -248,30 +248,29 @@ async def test_papers_with_code_returns_items(monkeypatch):
     )
 
     ingestor = PapersWithCodeIngestor(max_results=50)
-    items = await ingestor.fetch(SINCE)
+    items = await ingestor.fetch(date.today())
 
     assert len(items) == 1
-    assert items[0].source == "Papers With Code"
+    assert items[0].source == "HuggingFace Daily"
     assert items[0].raw_id == "1706.03762"
     assert items[0].url == "https://arxiv.org/abs/1706.03762"
 
 
 @pytest.mark.asyncio
 async def test_papers_with_code_filters_old_items(monkeypatch):
-    payload = {
-        "results": [
-            {
-                "id": "old-paper",
+    payload = [
+        {
+            "paper": {
+                "id": "2001.00001",
                 "title": "Old Paper",
-                "abstract": "Ancient results...",
+                "summary": "Ancient results...",
                 "authors": [],
-                "published": "2020-01-01",
-                "arxiv_id": "2001.00001",
-                "url_abs": "https://arxiv.org/abs/2001.00001",
+                "publishedAt": "2020-01-01T00:00:00.000Z",
             }
-        ]
-    }
+        }
+    ]
     mock_resp = AsyncMock()
+    mock_resp.status = 200
     mock_resp.raise_for_status = MagicMock()
     mock_resp.json = AsyncMock(return_value=payload)
     mock_resp.__aenter__ = AsyncMock(return_value=mock_resp)
@@ -288,7 +287,8 @@ async def test_papers_with_code_filters_old_items(monkeypatch):
     )
 
     ingestor = PapersWithCodeIngestor()
-    items = await ingestor.fetch(SINCE)
+    # since=today means published_date < today is filtered out
+    items = await ingestor.fetch(date.today())
     assert items == []
 
 
