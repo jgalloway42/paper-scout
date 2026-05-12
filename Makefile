@@ -1,28 +1,47 @@
-.PHONY: install dev-install migrate run-api run-digest test lint format
+.PHONY: install dev-install migrate run-api run-digest run-digest-dry docker-build docker-up docker-down docker-digest docker-digest-dry test lint format
+
+VENV = .venv
+PYTHON = $(VENV)/bin/python
+PIP = $(VENV)/bin/pip
 
 install:
-	pip install -e .
+	$(PIP) install -e .
 
 dev-install:
-	pip install -e ".[dev]"
+	$(PIP) install -e ".[dev]"
 
 migrate:
-	python -c "from backend.db.migrations import run; run()"
+	$(PYTHON) -c "from backend.db.migrations import run; run()"
 
 run-api:
-	uvicorn backend.api.main:app --reload --port 8000
+	$(VENV)/bin/uvicorn backend.api.main:app --reload --port 8000
 
 run-digest:
-	paper-scout digest
+	$(VENV)/bin/paper-scout digest
 
 run-digest-dry:
-	paper-scout digest --dry-run
+	$(VENV)/bin/paper-scout digest --dry-run
+
+docker-build:
+	docker compose build
+
+docker-up:
+	docker compose up
+
+docker-down:
+	docker compose down
+
+docker-digest:
+	docker compose run --rm app paper-scout digest
+
+docker-digest-dry:
+	docker compose run --rm app paper-scout digest --dry-run
 
 test:
-	pytest tests/ --cov=backend --cov-report=term-missing
+	$(VENV)/bin/pytest tests/ --cov=backend --cov-report=term-missing
 
 lint:
-	ruff check backend/ tests/
+	$(VENV)/bin/ruff check backend/ tests/
 
 format:
-	ruff format backend/ tests/
+	$(VENV)/bin/ruff format backend/ tests/
