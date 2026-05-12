@@ -1,0 +1,60 @@
+digest:
+  exploit_count: 3
+  wildcard_count: 2
+  exploration_strategy: "topic_diversity"   # "topic_diversity"|"adjacent_score"|"thompson"
+
+scoring:
+  prefilter_threshold: 0.2        # Min cosine sim to thumbs-up centroid before LLM scoring
+  llm_concurrency: 5              # Max concurrent LLM calls
+
+profile:
+  incremental_every_n: 5          # Trigger incremental update after this many new ratings
+  full_rebuild_every_n: 50        # Trigger full rebuild at multiples of this total rating count
+  full_rebuild_up_limit: 30       # Max thumbs-up items used in full rebuild
+  full_rebuild_down_limit: 20     # Max thumbs-down items used in full rebuild
+
+embeddings:
+  model: "all-MiniLM-L6-v2"
+  dedup_threshold: 0.92
+
+topic_exposure:
+  lookback_weeks: 4
+
+topic_taxonomy:
+  - "reinforcement_learning"
+  - "large_language_models"
+  - "computer_vision"
+  - "interpretability"
+  - "efficient_training"
+  - "multimodal"
+  - "agents_and_planning"
+  - "theory_and_optimization"
+  - "robotics"
+  - "applications"
+  - "other"
+
+ingestors:
+  arxiv:
+    enabled: true
+    categories: ["cs.LG", "cs.AI", "cs.CL", "stat.ML"]
+    max_results: 50
+  semantic_scholar:
+    enabled: true
+    keywords: ["machine learning", "deep learning", "reinforcement learning", "LLM agents"]
+    max_results: 30
+  huggingface:
+    enabled: true
+  rss:
+    enabled: true
+    feeds:
+      - url: "https://thegradient.pub/rss/"
+        name: "The Gradient"
+      - url: "https://distill.pub/rss.xml"
+        name: "Distill"
+  reddit:
+    enabled: true
+    subreddits: ["MachineLearning", "artificial"]
+    post_limit: 25
+
+email:
+  subject_template: "paper-scout: your {date} reading list"

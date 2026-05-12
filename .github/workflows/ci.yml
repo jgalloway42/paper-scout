@@ -1,0 +1,17 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -e ".[dev]"
+      - run: ruff check backend/ tests/
+      - run: pytest tests/ --cov=backend --cov-report=term-missing --cov-fail-under=80
+    env:
+      LLM_PROVIDER: claude
+      ANTHROPIC_API_KEY: test-key-not-used    # LLM mocked in all tests
+      PAPER_SCOUT_DB_PATH: ":memory:"
+      PAPER_SCOUT_HMAC_SECRET: test-secret
