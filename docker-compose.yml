@@ -5,6 +5,7 @@ services:
     environment:
       PAPER_SCOUT_DB_PATH: /data/paper_scout.db
       PAPER_SCOUT_CONFIG: /app/config.yaml
+      HF_HUB_OFFLINE: "1"
     ports:
       - "8000:8000"
     volumes:

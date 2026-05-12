@@ -7,7 +7,7 @@ from backend.llm.base import BaseLLMProvider, LLMError
 
 
 class GeminiProvider(BaseLLMProvider):
-    def __init__(self, api_key: str, model: str = "gemini-1.5-flash") -> None:
+    def __init__(self, api_key: str, model: str = "gemini-2.0-flash") -> None:
         self._client = genai.Client(api_key=api_key)
         self._model = model
 
