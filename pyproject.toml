@@ -37,6 +37,9 @@ dev = [
 where = ["."]
 include = ["backend*"]
 
+[tool.setuptools.package-data]
+"backend" = ["db/schema.sql"]
+
 [project.scripts]
 paper-scout = "backend.cli:app"
 
