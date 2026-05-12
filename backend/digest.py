@@ -35,6 +35,7 @@ def _build_ingestors(settings):
     """Instantiate all enabled ingestors."""
     from backend.ingestors.arxiv import ArxivIngestor
     from backend.ingestors.huggingface import HuggingFaceIngestor
+    from backend.ingestors.papers_with_code import PapersWithCodeIngestor
     from backend.ingestors.reddit import RedditIngestor
     from backend.ingestors.rss import RssIngestor
     from backend.ingestors.semantic_scholar import SemanticScholarIngestor
@@ -70,6 +71,8 @@ def _build_ingestors(settings):
                 post_limit=cfg.reddit.post_limit,
             )
         )
+    if cfg.papers_with_code.enabled:
+        ingestors.append(PapersWithCodeIngestor(cfg.papers_with_code.max_results))
     return ingestors
 
 

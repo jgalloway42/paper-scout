@@ -1,16 +1,16 @@
 # paper-scout
 
-A weekly AI paper discovery agent. Ingests papers from arXiv, Semantic Scholar,
-HuggingFace Papers, RSS feeds, and Reddit. Selects 5 items per week (3 exploit +
-2 wildcard), delivers them via Gmail with one-click rating links, and refines
-your interest profile from feedback.
+A weekly AI paper discovery agent. Ingests papers from arXiv, Papers With Code,
+Semantic Scholar, HuggingFace Papers, RSS feeds, and Reddit. Selects 5 items per
+week (3 exploit + 2 wildcard), delivers them via Gmail with one-click rating
+links, and refines your interest profile from feedback.
 
 ## Prerequisites
 
 - Python ≥ 3.11
 - A Gmail account with an App Password (see below)
-- Reddit app credentials (see below)
 - One LLM API key: Anthropic, Google Gemini, or a local Ollama instance
+- Reddit app credentials (optional — see below)
 
 ## Quick start (local)
 
@@ -40,11 +40,40 @@ make run-digest
 2. Search for "App passwords" → create one for "Mail"
 3. Copy the 16-character password into `GMAIL_APP_PASSWORD` in `.env`
 
-## Reddit app registration
+## Configuring sources
+
+Each ingestor can be independently enabled or disabled in `config.yaml`:
+
+```yaml
+ingestors:
+  arxiv:
+    enabled: true
+  papers_with_code:
+    enabled: true      # no credentials required
+  semantic_scholar:
+    enabled: true      # optional S2_API_KEY for higher rate limits
+  huggingface:
+    enabled: true
+  rss:
+    enabled: true
+  reddit:
+    enabled: false     # requires app credentials; set true once configured
+```
+
+Sources that are disabled are skipped entirely. Sources that fail (network error,
+auth failure, etc.) log a warning and return an empty list — the digest continues
+with whatever other sources returned.
+
+## Reddit app registration (optional)
+
+Reddit API access requires a registered app. Note that Reddit has been
+progressively tightening API access; if registration is unavailable, set
+`enabled: false` for the Reddit source in `config.yaml` — paper-scout works fine
+without it.
 
 1. Go to https://www.reddit.com/prefs/apps → "create another app"
-2. Choose "script" type
-3. Copy `client_id` (under app name) and `client_secret` into `.env`
+2. Choose **script** type; read and accept the Responsible Builder Policy
+3. Copy `client_id` (short string under app name) and `client_secret` into `.env`
 
 ## `.env` configuration
 

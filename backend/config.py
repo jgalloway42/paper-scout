@@ -83,12 +83,19 @@ class RedditConfig:
 
 
 @dataclass
+class PapersWithCodeConfig:
+    enabled: bool = True
+    max_results: int = 50
+
+
+@dataclass
 class IngestorsConfig:
     arxiv: ArxivConfig = field(default_factory=ArxivConfig)
     semantic_scholar: SemanticScholarConfig = field(default_factory=SemanticScholarConfig)
     huggingface: HuggingFaceConfig = field(default_factory=HuggingFaceConfig)
     rss: RssConfig = field(default_factory=RssConfig)
     reddit: RedditConfig = field(default_factory=RedditConfig)
+    papers_with_code: PapersWithCodeConfig = field(default_factory=PapersWithCodeConfig)
 
 
 @dataclass
@@ -197,6 +204,10 @@ def load_settings(config_path: Path | None = None) -> Settings:
                 enabled=ing.get("reddit", {}).get("enabled", True),
                 subreddits=ing.get("reddit", {}).get("subreddits", []),
                 post_limit=ing.get("reddit", {}).get("post_limit", 25),
+            ),
+            papers_with_code=PapersWithCodeConfig(
+                enabled=ing.get("papers_with_code", {}).get("enabled", True),
+                max_results=ing.get("papers_with_code", {}).get("max_results", 50),
             ),
         ),
         email=EmailConfig(

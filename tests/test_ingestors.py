@@ -9,6 +9,7 @@ from backend.ingestors.base import RawItem
 from backend.ingestors.rss import RssIngestor
 from backend.ingestors.huggingface import HuggingFaceIngestor
 from backend.ingestors.arxiv import ArxivIngestor
+from backend.ingestors.papers_with_code import PapersWithCodeIngestor
 from backend.ingestors.semantic_scholar import SemanticScholarIngestor
 from backend.ingestors.reddit import RedditIngestor
 
@@ -206,6 +207,103 @@ async def test_semantic_scholar_failure_returns_empty(monkeypatch):
     )
 
     ingestor = SemanticScholarIngestor(keywords=["ml"])
+    items = await ingestor.fetch(SINCE)
+    assert items == []
+
+
+# ---------------------------------------------------------------------------
+# Papers With Code ingestor
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_papers_with_code_returns_items(monkeypatch):
+    payload = {
+        "results": [
+            {
+                "id": "attention-is-all-you-need",
+                "title": "Attention Is All You Need",
+                "abstract": "The dominant sequence transduction models...",
+                "authors": [{"name": "Ashish Vaswani"}],
+                "published": date.today().isoformat(),
+                "arxiv_id": "1706.03762",
+                "url_abs": "https://arxiv.org/abs/1706.03762",
+            }
+        ]
+    }
+    mock_resp = AsyncMock()
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.json = AsyncMock(return_value=payload)
+    mock_resp.__aenter__ = AsyncMock(return_value=mock_resp)
+    mock_resp.__aexit__ = AsyncMock(return_value=False)
+
+    mock_session = AsyncMock()
+    mock_session.get = MagicMock(return_value=mock_resp)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+
+    monkeypatch.setattr(
+        "backend.ingestors.papers_with_code.aiohttp.ClientSession",
+        lambda: mock_session,
+    )
+
+    ingestor = PapersWithCodeIngestor(max_results=50)
+    items = await ingestor.fetch(SINCE)
+
+    assert len(items) == 1
+    assert items[0].source == "Papers With Code"
+    assert items[0].raw_id == "1706.03762"
+    assert items[0].url == "https://arxiv.org/abs/1706.03762"
+
+
+@pytest.mark.asyncio
+async def test_papers_with_code_filters_old_items(monkeypatch):
+    payload = {
+        "results": [
+            {
+                "id": "old-paper",
+                "title": "Old Paper",
+                "abstract": "Ancient results...",
+                "authors": [],
+                "published": "2020-01-01",
+                "arxiv_id": "2001.00001",
+                "url_abs": "https://arxiv.org/abs/2001.00001",
+            }
+        ]
+    }
+    mock_resp = AsyncMock()
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.json = AsyncMock(return_value=payload)
+    mock_resp.__aenter__ = AsyncMock(return_value=mock_resp)
+    mock_resp.__aexit__ = AsyncMock(return_value=False)
+
+    mock_session = AsyncMock()
+    mock_session.get = MagicMock(return_value=mock_resp)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+
+    monkeypatch.setattr(
+        "backend.ingestors.papers_with_code.aiohttp.ClientSession",
+        lambda: mock_session,
+    )
+
+    ingestor = PapersWithCodeIngestor()
+    items = await ingestor.fetch(SINCE)
+    assert items == []
+
+
+@pytest.mark.asyncio
+async def test_papers_with_code_failure_returns_empty(monkeypatch):
+    mock_session = AsyncMock()
+    mock_session.__aenter__ = AsyncMock(side_effect=Exception("connection error"))
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+
+    monkeypatch.setattr(
+        "backend.ingestors.papers_with_code.aiohttp.ClientSession",
+        lambda: mock_session,
+    )
+
+    ingestor = PapersWithCodeIngestor()
     items = await ingestor.fetch(SINCE)
     assert items == []
 
