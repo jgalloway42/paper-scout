@@ -1,7 +1,9 @@
 """LLM scoring + summary generation. One call per item."""
 
+import asyncio
 import json
 import logging
+import re
 from dataclasses import dataclass
 
 from backend.ingestors.base import RawItem
@@ -22,11 +24,31 @@ You are a research assistant. Write a 2-3 sentence plain English summary of the 
 highlighting what it does and why it might be interesting to a machine learning researcher.
 Return only the summary text, no JSON."""
 
+_daily_quota_exhausted = False
+
 
 @dataclass
 class ScoreResult:
     score: float   # 0.0–1.0; -1.0 for wildcard (summary-only call)
     summary: str   # 2–3 sentences, plain English
+
+
+def _classify_llm_error(exc: Exception) -> tuple[str, float | None]:
+    """Return (kind, retry_delay_seconds) for a caught LLM exception.
+
+    kind is one of: 'daily_quota', 'transient_rate_limit', 'other'
+    """
+    msg = str(exc)
+    is_rate_limited = "429" in msg or "RESOURCE_EXHAUSTED" in msg
+    if not is_rate_limited:
+        return ("other", None)
+    if "GenerateRequestsPerDayPerProjectPerModel" in msg:
+        return ("daily_quota", None)
+    delay: float | None = None
+    m = re.search(r"retryDelay['\"]:\s*['\"](\d+(?:\.\d+)?)s", msg)
+    if m:
+        delay = float(m.group(1))
+    return ("transient_rate_limit", delay)
 
 
 async def score_and_summarise(
@@ -46,33 +68,73 @@ async def _score_and_summarise(
     profile: str,
     provider: BaseLLMProvider,
 ) -> ScoreResult:
+    global _daily_quota_exhausted
+    if _daily_quota_exhausted:
+        return ScoreResult(score=0.0, summary="")
+
     user_prompt = (
         f"User interest profile:\n{profile}\n\n"
         f"Paper title: {item.title}\n"
         f"Abstract: {item.abstract[:400]}\n"
         f"Source: {item.source}"
     )
-    try:
-        raw = await provider.complete(_EXPLOIT_SYSTEM, user_prompt, max_tokens=300)
-        data = json.loads(raw.strip())
-        score = float(data["score"])
-        score = max(0.0, min(1.0, score))
-        summary = str(data.get("summary", ""))
-        return ScoreResult(score=score, summary=summary)
-    except Exception as exc:
-        logger.warning("score_and_summarise failed for %r: %s", item.title, exc)
-        return ScoreResult(score=0.0, summary="")
+    for attempt in range(2):
+        try:
+            raw = await provider.complete(_EXPLOIT_SYSTEM, user_prompt, max_tokens=300)
+            data = json.loads(raw.strip())
+            score = float(data["score"])
+            score = max(0.0, min(1.0, score))
+            summary = str(data.get("summary", ""))
+            return ScoreResult(score=score, summary=summary)
+        except Exception as exc:
+            kind, delay = _classify_llm_error(exc)
+            if kind == "daily_quota":
+                _daily_quota_exhausted = True
+                logger.warning("Gemini daily quota exhausted — skipping remaining scoring")
+                return ScoreResult(score=0.0, summary="")
+            elif kind == "transient_rate_limit" and attempt == 0:
+                wait = delay or 30.0
+                logger.info("Rate limited on %r, retrying in %.0fs", item.title, wait)
+                await asyncio.sleep(wait)
+                continue
+            elif kind == "transient_rate_limit":
+                logger.warning("Rate limited twice on %r, skipping", item.title)
+                return ScoreResult(score=0.0, summary="")
+            else:
+                logger.warning("score failed for %r: %.200s", item.title, str(exc))
+                return ScoreResult(score=0.0, summary="")
+    return ScoreResult(score=0.0, summary="")
 
 
 async def _summarise_only(item: RawItem, provider: BaseLLMProvider) -> ScoreResult:
+    global _daily_quota_exhausted
+    if _daily_quota_exhausted:
+        return ScoreResult(score=-1.0, summary="")
+
     user_prompt = (
         f"Paper title: {item.title}\n"
         f"Abstract: {item.abstract[:400]}\n"
         f"Source: {item.source}"
     )
-    try:
-        summary = await provider.complete(_WILDCARD_SYSTEM, user_prompt, max_tokens=200)
-        return ScoreResult(score=-1.0, summary=summary.strip())
-    except Exception as exc:
-        logger.warning("summarise_only failed for %r: %s", item.title, exc)
-        return ScoreResult(score=-1.0, summary="")
+    for attempt in range(2):
+        try:
+            summary = await provider.complete(_WILDCARD_SYSTEM, user_prompt, max_tokens=200)
+            return ScoreResult(score=-1.0, summary=summary.strip())
+        except Exception as exc:
+            kind, delay = _classify_llm_error(exc)
+            if kind == "daily_quota":
+                _daily_quota_exhausted = True
+                logger.warning("Gemini daily quota exhausted — skipping remaining scoring")
+                return ScoreResult(score=-1.0, summary="")
+            elif kind == "transient_rate_limit" and attempt == 0:
+                wait = delay or 30.0
+                logger.info("Rate limited on %r, retrying in %.0fs", item.title, wait)
+                await asyncio.sleep(wait)
+                continue
+            elif kind == "transient_rate_limit":
+                logger.warning("Rate limited twice on %r, skipping", item.title)
+                return ScoreResult(score=-1.0, summary="")
+            else:
+                logger.warning("summarise failed for %r: %.200s", item.title, str(exc))
+                return ScoreResult(score=-1.0, summary="")
+    return ScoreResult(score=-1.0, summary="")

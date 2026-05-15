@@ -145,13 +145,19 @@ async def run_weekly_digest(dry_run: bool = False) -> int:
 
     # Step 10: Score exploit candidates with concurrency limit
     semaphore = asyncio.Semaphore(settings.scoring.llm_concurrency)
+    total = len(exploit_candidates)
+    logger.info("Scoring %d exploit candidates", total)
 
-    async def _score_one(item: RawItem):
+    async def _score_one(idx: int, item: RawItem):
         async with semaphore:
+            logger.info("Scoring %d/%d: %s", idx + 1, total, item.title[:60])
             return await score_and_summarise(item, profile_text, provider)
 
-    score_tasks = [_score_one(item) for item in exploit_candidates]
+    score_tasks = [_score_one(i, item) for i, item in enumerate(exploit_candidates)]
     score_results = await asyncio.gather(*score_tasks)
+
+    n_ok = sum(1 for sr in score_results if sr.score > 0.0 or sr.summary)
+    logger.info("Scoring complete: %d/%d succeeded, %d failed/rate-limited", n_ok, total, total - n_ok)
 
     # Step 11: Sort, select top exploit_count
     scored = sorted(

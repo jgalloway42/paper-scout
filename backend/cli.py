@@ -7,6 +7,7 @@ import typer
 
 app = typer.Typer(name="paper-scout", help="Weekly AI paper discovery agent.")
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+logging.getLogger("google_genai").setLevel(logging.WARNING)
 
 
 @app.command()
