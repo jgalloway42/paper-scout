@@ -18,7 +18,10 @@ class ClaudeProvider(BaseLLMProvider):
                 system=system,
                 messages=[{"role": "user", "content": user}],
             )
-            return msg.content[0].text
+            text = msg.content[0].text if msg.content else ""
+            if not text:
+                raise LLMError(f"empty response (stop_reason={msg.stop_reason})")
+            return text
         except anthropic.APIError as exc:
             raise LLMError(str(exc)) from exc
         except Exception as exc:

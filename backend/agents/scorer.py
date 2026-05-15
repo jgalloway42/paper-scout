@@ -33,6 +33,15 @@ class ScoreResult:
     summary: str   # 2–3 sentences, plain English
 
 
+def _strip_code_fences(text: str) -> str:
+    """Remove markdown code fences that some models wrap around JSON."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[-1]
+        text = text.rsplit("```", 1)[0]
+    return text.strip()
+
+
 def _classify_llm_error(exc: Exception) -> tuple[str, float | None]:
     """Return (kind, retry_delay_seconds) for a caught LLM exception.
 
@@ -79,9 +88,10 @@ async def _score_and_summarise(
         f"Source: {item.source}"
     )
     for attempt in range(2):
+        raw = ""
         try:
             raw = await provider.complete(_EXPLOIT_SYSTEM, user_prompt, max_tokens=300)
-            data = json.loads(raw.strip())
+            data = json.loads(_strip_code_fences(raw))
             score = float(data["score"])
             score = max(0.0, min(1.0, score))
             summary = str(data.get("summary", ""))
@@ -101,7 +111,7 @@ async def _score_and_summarise(
                 logger.warning("Rate limited twice on %r, skipping", item.title)
                 return ScoreResult(score=0.0, summary="")
             else:
-                logger.warning("score failed for %r: %.200s", item.title, str(exc))
+                logger.warning("score failed for %r: %.200s | raw=%.100r", item.title, str(exc), raw)
                 return ScoreResult(score=0.0, summary="")
     return ScoreResult(score=0.0, summary="")
 
