@@ -37,11 +37,11 @@ ingestors:
   arxiv:
     enabled: true
     categories: ["cs.LG", "cs.AI", "cs.CL", "stat.ML"]
-    max_results: 15
+    max_results: 25
   semantic_scholar:
-    enabled: true
+    enabled: false
     keywords: ["machine learning", "deep learning", "reinforcement learning", "LLM agents"]
-    max_results: 15
+    max_results: 25
   huggingface:
     enabled: true
   rss:
@@ -57,7 +57,7 @@ ingestors:
     post_limit: 15
   papers_with_code:
     enabled: true
-    max_results: 15
+    max_results: 25
 
 email:
   subject_template: "paper-scout: your {date} reading list"
