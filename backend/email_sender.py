@@ -25,7 +25,7 @@ def send_digest_email(digest_id: int, items: list[dict], recipient: str) -> None
     settings = get_settings()
     sender = settings.gmail_address
     password = settings.gmail_app_password
-    api_url = settings.railway_api_url.rstrip("/")
+    api_url = settings.api_base_url.rstrip("/")
     secret = settings.hmac_secret
 
     subject = settings.email.subject_template.format(

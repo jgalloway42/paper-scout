@@ -28,7 +28,7 @@ jobs:
       GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
       PAPER_SCOUT_EMAIL_TO: ${{ secrets.PAPER_SCOUT_EMAIL_TO }}
       PAPER_SCOUT_HMAC_SECRET: ${{ secrets.PAPER_SCOUT_HMAC_SECRET }}
-      RAILWAY_API_URL: ${{ secrets.RAILWAY_API_URL }}
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
       PAPER_SCOUT_DB_PATH: paper_scout.db
       REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
       REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}

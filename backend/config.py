@@ -118,7 +118,7 @@ class Settings:
     llm_provider: str = "claude"
     db_path: str = "paper_scout.db"
     hmac_secret: str = ""
-    railway_api_url: str = ""
+    api_base_url: str = ""
     gmail_address: str = ""
     gmail_app_password: str = ""
     email_to: str = ""
@@ -217,7 +217,7 @@ def load_settings(config_path: Path | None = None) -> Settings:
         llm_provider=os.environ.get("LLM_PROVIDER", "claude"),
         db_path=os.environ.get("PAPER_SCOUT_DB_PATH", "paper_scout.db"),
         hmac_secret=os.environ.get("PAPER_SCOUT_HMAC_SECRET", ""),
-        railway_api_url=os.environ.get("RAILWAY_API_URL", ""),
+        api_base_url=os.environ.get("API_BASE_URL", os.environ.get("RAILWAY_API_URL", "")),
         gmail_address=os.environ.get("GMAIL_ADDRESS", ""),
         gmail_app_password=os.environ.get("GMAIL_APP_PASSWORD", ""),
         email_to=os.environ.get("PAPER_SCOUT_EMAIL_TO", ""),
